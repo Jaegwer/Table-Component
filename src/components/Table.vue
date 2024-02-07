@@ -70,7 +70,7 @@
             <th>
               <div>
                 <v-text-field v-model="selectAllOnAccount" outlined hide-details></v-text-field>
-                <v-button @click="selectAllOnActionChanged">Select All On Account</v-button>
+                <v-button class="text-red" @click="selectAllOnActionChanged"><span class="mdi mdi-table-arrow-down"></span></v-button>
               </div>
             </th>
           </tr>
