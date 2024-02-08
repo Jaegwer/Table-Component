@@ -1,3 +1,6 @@
-.mdi-menu-down{
-	display: none !important;
+@media (max-width: 768px) {
+  .v-input__control {
+	grid-area: auto !important;
+  }
+
 }

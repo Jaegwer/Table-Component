@@ -13,6 +13,7 @@
           ></v-text-field>
           <v-checkbox label="Is Provider" v-model="isProvider"></v-checkbox>
           <v-checkbox label="Is Consumer" v-model="isConsumer"></v-checkbox>
+		  <v-btn @click="resetFilters"><span class="mdi mdi-filter-remove-outline text-red"></span></v-btn>
         </div>
       </template>
 
@@ -76,13 +77,13 @@
           </tr>
         </template>
         <template v-slot:item.provider="{ item }">
-          <v-checkbox v-model="item.provider" outlined hide-details></v-checkbox>
+          <v-checkbox v-model="item.provider" :disabled="!selected.includes(item)" outlined hide-details></v-checkbox>
         </template>
         <template v-slot:item.consumer="{ item }">
-          <v-checkbox v-model="item.consumer" outlined hide-details></v-checkbox>
+          <v-checkbox v-model="item.consumer" :disabled="!selected.includes(item)" outlined hide-details></v-checkbox>
         </template>
         <template v-slot:item.Onaccount="{ item }">
-          <v-text-field v-model="item.Onaccount" outlined hide-details></v-text-field>
+          <v-text-field v-model="item.Onaccount" :disabled="!selected.includes(item)" outlined hide-details></v-text-field>
         </template>
       </v-data-table>
     </v-card>
@@ -91,6 +92,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+// Constants
 const search = ref<string>('')
 const isProvider = ref<boolean>(false)
 const isConsumer = ref<boolean>(false)
@@ -181,6 +183,15 @@ const filteredCostCentres = computed(() => {
   }
   return filterByName(filteredData, search.value)
 })
+const resetFilters = () => {
+  search.value = ''
+  isProvider.value = false
+  isConsumer.value = false
+  selectAllProviders.value = false
+  selectAllConsumers.value = false
+  selectAllOnAccount.value = ''
+  selected.value = []
+}
 // Selections
 const selectAllProvidersChanged = () => {
   if (selectAllProviders.value) {
@@ -249,6 +260,15 @@ const handleMenuItemClick = (item: any) => {
         }
       });
     }
+  }else if(item.value === 'Aselect'){
+	selected.value.push(...costCentres.value);
+
+  }else if(item.value === 'Aunselect'){
+	selected.value = [];
+  }else if(item.value === 'Ainvert'){
+	const selectedNames = selected.value.map((item) => item.name)
+    const remainingCentres = costCentres.value.filter((item) => !selectedNames.includes(item.name))
+    selected.value.splice(0, selected.value.length, ...remainingCentres)
   }
 }
 
