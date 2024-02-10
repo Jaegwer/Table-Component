@@ -1,21 +1,15 @@
 <template>
   <div>
     <v-card flat title="Cost Centres">
-      <template v-slot:text>
-        <div class="d-flex">
-          <v-text-field
-            v-model="search"
-            label="Filter..."
-            prepend-inner-icon="mdi-magnify"
-            single-line
-            variant="outlined"
-            hide-details
-          ></v-text-field>
-          <v-checkbox label="Is Provider" v-model="isProvider"></v-checkbox>
-          <v-checkbox label="Is Consumer" v-model="isConsumer"></v-checkbox>
-		  <v-btn @click="resetFilters"><span class="mdi mdi-filter-remove-outline text-red"></span></v-btn>
-        </div>
-      </template>
+      <FilterSection
+        :search="search"
+        :isProvider="isProvider"
+        :isConsumer="isConsumer"
+        :resetFilters="() => resetFilters()"
+        :emitSearch="handleSearch"
+        :emitProvider="handleProviderFilter"
+        :emitConsumer="handleConsumerFilter"
+      />
 
       <v-data-table
         return-object
@@ -71,19 +65,36 @@
             <th>
               <div>
                 <v-text-field v-model="selectAllOnAccount" outlined hide-details></v-text-field>
-                <v-button class="text-red" @click="selectAllOnActionChanged"><span class="mdi mdi-table-arrow-down"></span></v-button>
+                <v-button class="text-red" @click="selectAllOnActionChanged"
+                  ><span class="mdi mdi-table-arrow-down"></span
+                ></v-button>
               </div>
             </th>
           </tr>
         </template>
         <template v-slot:item.provider="{ item }">
-          <v-checkbox v-model="item.provider" :disabled="!selected.includes(item)" outlined hide-details></v-checkbox>
+          <v-checkbox
+            v-model="item.provider"
+            :disabled="!selected.includes(item)"
+            outlined
+            hide-details
+          ></v-checkbox>
         </template>
         <template v-slot:item.consumer="{ item }">
-          <v-checkbox v-model="item.consumer" :disabled="!selected.includes(item)" outlined hide-details></v-checkbox>
+          <v-checkbox
+            v-model="item.consumer"
+            :disabled="!selected.includes(item)"
+            outlined
+            hide-details
+          ></v-checkbox>
         </template>
         <template v-slot:item.Onaccount="{ item }">
-          <v-text-field v-model="item.Onaccount" :disabled="!selected.includes(item)" outlined hide-details></v-text-field>
+          <v-text-field
+            v-model="item.Onaccount"
+            :disabled="!selected.includes(item)"
+            outlined
+            hide-details
+          ></v-text-field>
         </template>
       </v-data-table>
     </v-card>
@@ -91,6 +102,8 @@
 </template>
 
 <script setup lang="ts">
+import type { OptionItem, CostCentre, Headers, Row, Filter, SelectedData } from '../types/interface'
+import FilterSection from './FilterSection.vue'
 import { ref, computed } from 'vue'
 // Constants
 const search = ref<string>('')
@@ -99,7 +112,7 @@ const isConsumer = ref<boolean>(false)
 const selectAllProviders = ref<boolean>(false)
 const selectAllConsumers = ref<boolean>(false)
 const selectAllOnAccount = ref<string>('')
-const optionsItems = ref<Array<any>>([
+const optionsItems = ref<OptionItem[]>([
   { text: 'Visible: select', value: 'Vselect' },
   { text: 'Visible: unselect', value: 'Vunselect' },
   { text: 'Visible: invert', value: 'Vinvert' },
@@ -107,8 +120,8 @@ const optionsItems = ref<Array<any>>([
   { text: 'All: unselect', value: 'Aunselect' },
   { text: 'All: invert', value: 'Ainvert' }
 ])
-const selected = ref<Array<any>>([])
-const headers = ref<Array<any>>([
+const selected = ref<SelectedData[]>([])
+const headers = ref<Headers[]>([
   {
     title: 'Cost centre',
     align: 'start',
@@ -118,7 +131,7 @@ const headers = ref<Array<any>>([
   { title: 'Consumer', align: 'end', key: 'consumer' },
   { title: 'On account', align: 'end', key: 'Onaccount' }
 ])
-const costCentres = ref<Array<any>>([
+const costCentres = ref<CostCentre[]>([
   {
     name: 'Apportionment 1',
     provider: '',
@@ -157,8 +170,14 @@ const costCentres = ref<Array<any>>([
   }
 ])
 
-const selectRow = (item: any, event: MouseEvent) => {
-  if ((event.target as HTMLElement).tagName.toLowerCase() === 'input') return
+const selectRow = (item: Row, event: MouseEvent) => {
+  if (
+    event.target &&
+    (event.target as HTMLElement).tagName &&
+    (event.target as HTMLElement).tagName.toLowerCase() === 'input'
+  ) {
+    return
+  }
 
   const index = selected.value.findIndex((s) => s.name === item.name)
   if (index !== -1) {
@@ -167,30 +186,37 @@ const selectRow = (item: any, event: MouseEvent) => {
     selected.value.push(item)
   }
 }
+
 // Filters
-const filterByName = (data: any[], searchText: string) => {
+const filterByName = (data: Filter[], searchText: string) => {
   if (!searchText.trim()) return data
   return data.filter((item) => item.name.toLowerCase().includes(searchText.toLowerCase()))
 }
+const handleProviderFilter = (value: boolean) => {
+  isProvider.value = value
+}
 
+const handleConsumerFilter = (value: boolean) => {
+  isConsumer.value = value
+}
 const filteredCostCentres = computed(() => {
-  let filteredData = costCentres.value
+  let filteredData = costCentres.value as Filter[]
   if (isProvider.value) {
-    filteredData = filteredData.filter((dessert) => dessert.provider !== '')
+    filteredData = filteredData.filter((item) => item.provider !== '')
   }
   if (isConsumer.value) {
-    filteredData = filteredData.filter((dessert) => dessert.consumer !== '')
+    filteredData = filteredData.filter((item) => item.consumer !== '')
   }
   return filterByName(filteredData, search.value)
 })
 const resetFilters = () => {
+	console.log(search.value);
+
   search.value = ''
+  console.log(search.value);
+
   isProvider.value = false
   isConsumer.value = false
-  selectAllProviders.value = false
-  selectAllConsumers.value = false
-  selectAllOnAccount.value = ''
-  selected.value = []
 }
 // Selections
 const selectAllProvidersChanged = () => {
@@ -224,54 +250,62 @@ const selectAllConsumersChanged = () => {
   }
 }
 const selectAllOnActionChanged = () => {
-  if (selectAllOnAccount.value) {
+  if (selectAllOnAccount.value !== '') {
     selected.value.forEach((item) => {
-      if (item.Onaccount === '') {
-        item.Onaccount = selectAllOnAccount.value
-      } else {
-        item.Onaccount = selectAllOnAccount.value
-      }
+      item.Onaccount = selectAllOnAccount.value
+    })
+  } else {
+    selected.value.forEach((item) => {
+      item.Onaccount = ''
     })
   }
 }
-const handleMenuItemClick = (item: any) => {
+
+const handleMenuItemClick = (item: OptionItem) => {
   if (item.value === 'Vselect') {
     if (filteredCostCentres.value.length > 0) {
-      const filteredSelectedNames = new Set(selected.value.map(item => item.name));
+      const filteredSelectedNames = new Set(selected.value.map((item) => item.name))
       filteredCostCentres.value.forEach((dessert) => {
         if (!filteredSelectedNames.has(dessert.name)) {
-          selected.value.push(dessert);
+          selected.value.push(dessert)
         }
-      });
+      })
     } else {
-      selected.value.push(...costCentres.value);
+      selected.value.push(...(costCentres.value as SelectedData[]))
     }
   } else if (item.value === 'Vunselect') {
     if (filteredCostCentres.value.length > 0) {
-      selected.value = selected.value.filter((item) => !filteredCostCentres.value.some(d => d.name === item.name));
+      selected.value = selected.value.filter(
+        (item) => !filteredCostCentres.value.some((d) => d.name === item.name)
+      )
     }
   } else if (item.value === 'Vinvert') {
     if (filteredCostCentres.value.length > 0) {
-      const filteredSelectedNames = new Set(selected.value.map(item => item.name));
-      selected.value = selected.value.filter((item) => !filteredCostCentres.value.some(d => d.name === item.name));
+      const filteredSelectedNames = new Set(selected.value.map((item) => item.name))
+      selected.value = selected.value.filter(
+        (item) => !filteredCostCentres.value.some((d) => d.name === item.name)
+      )
       filteredCostCentres.value.forEach((dessert) => {
         if (!filteredSelectedNames.has(dessert.name)) {
-          selected.value.push(dessert);
+          selected.value.push(dessert)
         }
-      });
+      })
     }
-  }else if(item.value === 'Aselect'){
-	selected.value.push(...costCentres.value);
-
-  }else if(item.value === 'Aunselect'){
-	selected.value = [];
-  }else if(item.value === 'Ainvert'){
-	const selectedNames = selected.value.map((item) => item.name)
+  } else if (item.value === 'Aselect') {
+    const selectedNames = new Set(selected.value.map((item) => item.name))
+    const nonSelectedItems = costCentres.value.filter((item) => !selectedNames.has(item.name))
+    selected.value.push(...(nonSelectedItems as SelectedData[]))
+  } else if (item.value === 'Aunselect') {
+    selected.value = []
+  } else if (item.value === 'Ainvert') {
+    const selectedNames = selected.value.map((item) => item.name)
     const remainingCentres = costCentres.value.filter((item) => !selectedNames.includes(item.name))
-    selected.value.splice(0, selected.value.length, ...remainingCentres)
+    selected.value.splice(0, selected.value.length, ...(remainingCentres as SelectedData[]))
   }
 }
-
+const handleSearch = (value: string) => {
+  search.value = value
+}
 </script>
 
 <style scoped></style>
